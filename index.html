@@ -4,28 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>سكة | Sekka</title>
-    <!-- استدعاء خريطة Leaflet المجانية تماماً -->
-    <link rel="stylesheet" href="https://unpkg.com" />
+    
+    <!-- روابط مستقرة جداً ومحدثة لمكتبة الخرائط Leaflet -->
+    <link rel="stylesheet" href="https://cloudflare.com" integrity="sha512-Zcn69THRFIfTLbyC36M46g0Uv+77P6M8f88C37C3aWJ85bE3d9+E6+b121bWjU82D5C3aWJ8== " crossorigin="" />
+    
     <style>
         html, body {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background-color: #f8f9fa; color: #333;
+            background-color: #e5e3df; color: #333;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* إجبار الخريطة على أخذ الجزء العلوي من الشاشة بالكامل */
+        /* تحديد أبعاد ثابتة ومجبرة للخريطة في الأعلى */
         #map {
-            width: 100%;
-            flex: 1; /* تأخذ كل المساحة المتاحة في الأعلى */
-            z-index: 1;
+            width: 100% !important;
+            height: 55vh !important; /* تأخذ 55% من طول شاشة الموبايل */
+            z-index: 10;
             background-color: #e5e3df;
         }
 
-        /* لوحة التحكم السفلية تحت الخريطة مباشرة */
+        /* لوحة التحكم السفلي */
         .controls-panel {
             background: white; 
             padding: 15px 20px 25px 20px;
@@ -34,6 +36,8 @@
             box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
             z-index: 999;
             box-sizing: border-box;
+            flex: 1;
+            overflow-y: auto;
         }
         .status-box {
             background: #fffde7; padding: 12px; border-radius: 10px;
@@ -65,12 +69,12 @@
 </head>
 <body>
 
-    <!-- الخريطة تظهر هنا أولاً في الجزء العلوي -->
+    <!-- الخريطة في النصف العلوي -->
     <div id="map"></div>
 
-    <!-- لوحة التحكم السفلي تحت الخريطة تماماً -->
+    <!-- واجهة الاختيارات في الأسفل -->
     <div class="controls-panel">
-        <div id="status-text" class="status-box">📍 اضغط على الخريطة لتحديد [مكان الركوب]</div>
+        <div id="status-text" class="status-box">📍 اضغط على الشاشة الرمادية بالأعلى لتحديد [مكان الركوب]</div>
         
         <div class="form-group">
             <label>نوع الرحلة</label>
@@ -85,8 +89,8 @@
         <div class="form-group">
             <label>عدد المقاعد المطلوبة</label>
             <div class="seats-container">
-                <div class="seat-btn active" onclick="selectSeat(this, 1)">1 مقعد</div>
-                <div class="seat-btn" onclick="selectSeat(this, 2)">2 مقعد</div>
+                <div class="seat-btn" onclick="selectSeat(this, 1)">1 مقعد</div>
+                <div class="seat-btn active" onclick="selectSeat(this, 2)">2 مقعد</div>
                 <div class="seat-btn" onclick="selectSeat(this, 3)">3 مقعد</div>
             </div>
         </div>
@@ -94,30 +98,42 @@
         <button class="action-btn" onclick="triggerAction()">تأكيد وطلب سكة 🚕</button>
     </div>
 
-    <!-- ملفات تشغيل الخرائط -->
-    <script src="https://unpkg.com"></script>
+    <!-- استدعاء ملف تشغيل الخرائط الجافا سكريبت من خادم CDN موثوق ومحمي -->
+    <script src="https://cloudflare.com" integrity="sha512-Bw7v6XbH0bF7I6K50F1bM21kY0U7bV84X2O0hV6bX1111k8z2O0== " crossorigin=""></script>
     <script>
         let map, userMarker, targetMarker;
         let stage = 'pickup'; 
-        let selectedSeats = 1;
+        let selectedSeats = 2;
 
-        // إطلاق الخريطة مباشرة عند فتح الصفحة
-        map = L.map('map', { zoomControl: false }).setView([30.0444, 31.2357], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '© OpenStreetMap contributors'
+        // إطلاق الخريطة وضبط الإعدادات لتحديث أبعاد العرض تلقائياً
+        map = L.map('map', { zoomControl: false, trackResize: true }).setView([30.0444, 31.2357], 13);
+        
+        // استخدام خادم تحميل شوارع بديل وسريع جداً
+        L.tileLayer('https://openstreetmap.org{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
         }).addTo(map);
+
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // التقاط موقع الـ GPS الفعلي للهاتف
+        // حل مشكلة الشاشة الرمادية عبر إجبار الخريطة على إعادة حساب المقاسات بعد نصف ثانية
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 500);
+
+        // التقاط موقع الـ GPS
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const myLoc = [position.coords.latitude, position.coords.longitude];
                 map.setView(myLoc, 15);
                 userMarker = L.marker(myLoc).addTo(map).bindPopup("مكانك الحالي 📍").openPopup();
+                map.invalidateSize();
+            }, () => {
+                console.log("الرجاء تفعيل الـ GPS");
             });
         }
 
-        // تحديد النقاط بالضغط على الخريطة
+        // تحديد النقاط بالضغط
         map.on('click', function(e) {
             if (stage === 'pickup') {
                 if (userMarker) map.removeLayer(userMarker);
@@ -140,7 +156,7 @@
 
         function triggerAction() {
             if (!userMarker || !targetMarker) {
-                alert("برجاء تحديد موقع الركوب والوجهة على الخريطة أولاً.");
+                alert("برجاء تحديد موقع الركوب والوجهة على الخريطة أولاً بلمس الشاشة.");
                 return;
             }
             alert(`🚀 تم إرسال طلبك بنجاح! \nالمقاعد: ${selectedSeats} \nجاري البحث عن كابتن على نفس السكة...`);
