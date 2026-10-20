@@ -3,215 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سكة | Sekka</title>
+    <title>منصة سكة | Sekka System</title>
     
-    <!-- استدعاء ملفات تشغيل خريطة Leaflet الآمنة والمجانية تماماً 100% -->
-    <link rel="stylesheet" href="https://unpkg.com" crossorigin="" />
-    <script src="https://unpkg.com" crossorigin=""></script>
+    <!-- استدعاء مكتبة الخرائط الآمنة لتعمل على الهواتف دون شاشة بيضاء -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
 
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #121212;
-            color: white;
+            margin: 0; padding: 0;
+            background-color: #121212; color: white;
             text-align: center;
         }
         #map {
-            width: 100%;
-            height: 45vh; /* الخريطة ستشغل النصف العلوي من شاشة الهاتف */
+            width: 100%; height: 40vh;
             background-color: #222;
             border-bottom: 3px solid #f39c12;
         }
-        .container {
-            padding: 15px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .container { padding: 15px; max-width: 480px; margin: 0 auto; }
         .card {
-            background: #1e1e1e;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            margin-bottom: 15px;
+            background: #1e1e1e; border-radius: 12px; padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 12px;
             border: 1px solid #333;
         }
         .instruction {
-            font-size: 0.95rem;
-            color: #f1c40f;
-            margin-bottom: 12px;
-            background: #2c2c2c;
-            padding: 10px;
-            border-radius: 6px;
-            border-right: 4px solid #f39c12;
-            font-weight: bold;
+            font-size: 0.95rem; color: #f1c40f; margin-bottom: 12px;
+            background: #2c2c2c; padding: 10px; border-radius: 6px;
+            border-right: 4px solid #f39c12; font-weight: bold;
         }
-        select, .seat-btn {
-            width: 100%;
-            padding: 12px;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin-top: 5px;
-            margin-bottom: 15px;
+        .surge-section {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #2c2c2c; padding: 10px; border-radius: 8px; margin-bottom: 12px;
+        }
+        /* زر وقت الذروة تفعيل تجريبي */
+        .toggle-btn {
+            background: #e74c3c; color: white; border: none; padding: 6px 12px;
+            border-radius: 20px; font-weight: bold; cursor: pointer;
+        }
+        .toggle-btn.active { background: #2ecc71; }
+        
+        select, input {
+            width: 100%; padding: 10px; background: #2a2a2a; color: white;
+            border: 1px solid #444; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box;
         }
         .seats-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;
         }
         .seat-option {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            padding: 10px;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
+            background: #2a2a2a; border: 1px solid #444; padding: 8px;
+            color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
         }
-        .seat-option.active {
-            background: #27ae60;
-            border-color: #2ecc71;
-        }
+        .seat-option.active { background: #f39c12; color: black; font-weight: bold; }
+        
         .btn-main {
-            background-color: #f39c12;
-            color: black;
-            border: none;
-            padding: 14px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            background-color: #f39c12; color: black; border: none;
+            padding: 12px; width: 100%; border-radius: 8px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
         }
-        .btn-main:active {
-            background-color: #e67e22;
-        }
-        .info-text {
-            font-size: 0.85rem;
-            color: #aaa;
-            text-align: right;
-            margin-bottom: 4px;
+        .btn-main:active { background-color: #e67e22; }
+        
+        .invoice-box {
+            background: #1a1a1a; border: 1px dashed #f39c12; border-radius: 8px;
+            padding: 10px; margin-top: 10px; text-align: right; font-size: 0.9rem; display: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- منطقة الخريطة الحية السحابية -->
+    <!-- 1. شاشة الخريطة الحية وتتبع الحركة -->
     <div id="map"></div>
 
     <div class="container">
+        <!-- 2. زر تفعيل وقت الذروة (Surge Pricing) في الأعلى تجريبياً -->
+        <div class="surge-section">
+            <span>⚡ وضع وقت الذروة (زيادة تكلفة الكيلو لـ 15 ج):</span>
+            <button id="surge-toggle" class="toggle-btn" onclick="toggleSurge()">مغلق ❌</button>
+        </div>
+
         <div class="card">
             <div id="instruction" class="instruction">📍 اضغط على الخريطة لتحديد [مكان الركوب]</div>
             
-            <div class="info-text">نوع الرحلة</div>
-            <select id="ride-type">
-                <option value="instant">رحلة فورية (الآن) ⚡</option>
-                <option value="scheduled">رحلة مجدولة لاحقاً 📅</option>
+            <!-- تقسيم أسطول السيارات حسب الركاب والرحلة المشتركة -->
+            <label style="font-size: 0.85rem; display:block; text-align:right;">نوع الرحلة المطلوبة:</label>
+            <select id="ride-mode" onchange="updateVehicleOptions()">
+                <option value="combo">رحلة مشتركة (كومبو شاتل - تقسيم السعر) 👥</option>
+                <option value="private">رحلة خاصة (ملاكي إن درايف ومزايدة) 🔒</option>
             </select>
 
-            <div class="info-text">نوع الرحلة المطلوبة</div>
-            <select id="car-type">
-                <option value="private">رحلة خاصة (ملاكي بالكامل) 🔒</option>
-                <option value="combo">رحلة جماعية (كومبو شاتل) 👥</option>
-            </select>
+            <label style="font-size: 0.85rem; display:block; text-align:right;">السيارة المقترحة تلقائياً:</label>
+            <input type="text" id="vehicle-type" value="عربية سوزوكي" readonly />
 
-            <div class="info-text">عدد المقاعد المطلوبة</div>
-            <div class="seats-container">
+            <label style="font-size: 0.85rem; display:block; text-align:right;">عدد المقاعد (نظام حجز شاتل):</label>
+            <div class="seats-container" id="seats-box">
                 <div class="seat-option active" onclick="setSeats(1, this)">1 مقعد</div>
                 <div class="seat-option" onclick="setSeats(2, this)">2 مقعد</div>
                 <div class="seat-option" onclick="setSeats(3, this)">3 مقعد</div>
+                <div class="seat-option" onclick="setSeats(4, this)">4 مقعد</div>
             </div>
 
-            <button class="btn-main" onclick="submitRide()">🚕 تأكيد وطلب سكة</button>
+            <!-- نظام المزايدة للرحلات الخاصة -->
+            <div id="bidding-box" style="display:none;">
+                <label style="font-size: 0.85rem; display:block; text-align:right;">عرض سعرك المقترح (قابل للتعديل):</label>
+                <input type="number" id="driver-bid" value="50" />
+            </div>
+
+            <button class="btn-main" onclick="calculateInvoice()">🚕 تأكيد وحساب سكة</button>
+
+            <!-- الفاتورة النهائية وعمولة التطبيق وصافي ربح الكابتن -->
+            <div id="invoice" class="invoice-box"></div>
         </div>
     </div>
 
 <script>
-    let map;
-    let originMarker = null;
-    let destinationMarker = null;
-    let selectionStage = 'origin'; // تتحول إلى 'destination' بعد الضغط الأول
+    let map, originMarker, destinationMarker;
+    let stage = 'origin';
+    let isSurge = false;
     let selectedSeats = 1;
+    let pickupCoords = null, dropoffCoords = null;
 
-    // 1. تشغيل الخريطة والتركيز التلقائي على إحداثيات القاهرة والمحافظات المحيطة بها مجاناً بالكامل
-    const defaultCoords = [30.0444, 31.2357];
-    map = L.map('map', { zoomControl: true }).setView(defaultCoords, 11);
+    // تشغيل الخريطة بشكل آمن تماماً
+    map = L.map('map').setView([30.0444, 31.2357], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 2. تحميل طبقات الخرائط المؤمنة بـ HTTPS من سيرفر OpenStreetMap الرسمي لتعمل على الهواتف مباشرة
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // محاولة التقاط موقع العميل بالـ GPS إذا سمح بذلك لتسهيل الاختيار
+    // التقاط الموقع الفعلي عبر الـ GPS
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-            map.setView([position.coords.latitude, position.coords.longitude], 14);
+        navigator.geolocation.getCurrentPosition(p => {
+            map.setView([p.coords.latitude, p.coords.longitude], 14);
         });
     }
 
-    // 3. التحكم بالنقر على الخريطة لتسجيل نقطة البداية والنهاية
     map.on('click', function(e) {
-        handleMapClick(e.latlng);
+        if (stage === 'origin') {
+            if (originMarker) map.removeLayer(originMarker);
+            originMarker = L.marker(e.latlng).addTo(map).bindPopup("مكان الركوب").openPopup();
+            pickupCoords = e.latlng;
+            stage = 'destination';
+            document.getElementById('instruction').innerText = "🏁 اضغط الآن لتحديد [وجهة الوصول]";
+        } else {
+            if (destinationMarker) map.removeLayer(destinationMarker);
+            destinationMarker = L.marker(e.latlng).addTo(map).bindPopup("الوجهة").openPopup();
+            dropoffCoords = e.latlng;
+            stage = 'origin';
+            document.getElementById('instruction').innerText = "✅ تم تحديد النقطتين! اضغط لحساب الفاتورة.";
+        }
     });
 
-    function handleMapClick(latlng) {
-        if (selectionStage === 'origin') {
-            if (originMarker) map.removeLayer(originMarker);
-            
-            originMarker = L.marker(latlng).addTo(map).bindPopup("<b>نقطة الركوب (A)</b>").openPopup();
-            window.pickupCoords = latlng;
-            
-            selectionStage = 'destination';
-            document.getElementById('instruction').innerText = "🏁 ممتاز! اضغط الآن لتحديد [وجهة الوصول]";
-            document.getElementById('instruction').style.borderRightColor = "#2ecc71";
-            document.getElementById('instruction').style.color = "#2ecc71";
-        } else if (selectionStage === 'destination') {
-            if (destinationMarker) map.removeLayer(destinationMarker);
-            
-            destinationMarker = L.marker(latlng).addTo(map).bindPopup("<b>وجهة الوصول (B)</b>").openPopup();
-            window.dropoffCoords = latlng;
-            
-            selectionStage = 'origin'; // إرجاع المنظومة جاهزة لإعادة التحديد إذا أخطأ
-            document.getElementById('instruction').innerText = "✅ تم تحديد المسار! يمكنك الضغط على تأكيد أو إعادة التحديد بنقرة جديدة.";
-            document.getElementById('instruction').style.borderRightColor = "#f39c12";
-            document.getElementById('instruction').style.color = "#f39c12";
+    function toggleSurge() {
+        isSurge = !isSurge;
+        const btn = document.getElementById('surge-toggle');
+        if(isSurge) {
+            btn.innerText = "مفعل 🔥"; btn.classList.add('active');
+        } else {
+            btn.innerText = "مغلق ❌"; btn.classList.remove('active');
         }
     }
 
-    function setSeats(num, element) {
+    function setSeats(num, el) {
         selectedSeats = num;
-        let options = document.querySelectorAll('.seat-option');
-        options.forEach(opt => opt.classList.remove('active'));
-        element.classList.add('active');
+        document.querySelectorAll('.seat-option').forEach(opt => opt.classList.remove('active'));
+        el.classList.add('active');
+        updateVehicleOptions();
     }
 
-    function submitRide() {
-        if (!window.pickupCoords || !window.dropoffCoords) {
+    function updateVehicleOptions() {
+        const mode = document.getElementById('ride-mode').value;
+        const vehicleInput = document.getElementById('vehicle-type');
+        const bidding = document.getElementById('bidding-box');
+
+        if (mode === 'private') {
+            vehicleInput.value = "عربية ملاكي (خاصة)";
+            bidding.style.display = "block";
+        } else {
+            bidding.style.display = "none";
+            if (selectedSeats <= 3) vehicleInput.value = "عربية سوزوكي";
+            else vehicleInput.value = "ميكروباص (شاتل جماعي)";
+        }
+    }
+
+    function calculateInvoice() {
+        if (!pickupCoords || !dropoffCoords) {
             alert("برجاء تحديد موقع الركوب والوجهة على الخريطة أولاً.");
             return;
         }
-        
-        // حساب مسافة مستقيمة تقريبية بالكيلومتر بين النقطتين لتحديد السعر الفوري
-        const distance = (map.distance(window.pickupCoords, window.dropoffCoords) / 1000).toFixed(2);
-        const pricePerKm = 10;
-        let totalPrice = distance * pricePerKm;
 
-        // منطق الميكروباصات والرحلات المشتركة: إذا كانت المقاعد أكثر من 3 أشخاص قسّم التكلفة
-        if (selectedSeats > 3) {
-            totalPrice = totalPrice / selectedSeats;
+        // حساب المسافة الدقيقة بالكيلومتر
+        const distance = (map.distance(pickupCoords, dropoffCoords) / 1000).toFixed(2);
+        
+        // الحسابات والتقسيم الديناميكي والأرباح بناءً على كتالوج منع الخسارة الماليّة:
+        const baseFare = 10; // فتحة العداد
+        const ratePerKm = isSurge ? 15 : 10; // وقت الذروة تلقائي
+        
+        let singleTripCost = baseFare + (distance * ratePerKm);
+        let totalRideCost = singleTripCost;
+        let invoiceHtml = `<h3>💵 الفاتورة النهائية الحية:</h3>`;
+
+        const mode = document.getElementById('ride-mode').value;
+
+        if (mode === 'combo') {
+            // التقسيم العادل للأجرة في الرحلة المشتركة (مثال الكاتلوج لـ 3 ركاب)
+            let costPerPassenger = singleTripCost / selectedSeats;
+            totalRideCost = costPerPassenger * selectedSeats; // إجمالي ما يجمعه التطبيق
+            
+            invoiceHtml += `<p>👥 نظام رحلة مشتركة لعدد (${selectedSeats}) ركاب.</p>`;
+            invoiceHtml += `<p>💰 الراكب الواحد يدفع: ${costPerPassenger.toFixed(2)} جنيه.</p>`;
+        } else {
+            // نظام إن درايف والمزايدة للرحلات الخاصة
+            let customBid = parseFloat(document.getElementById('driver-bid').value);
+            totalRideCost = customBid > 0 ? customBid : singleTripCost;
+            invoiceHtml += `<p>🔒 رحلة خاصة ملاكي (نظام المزايدة الخاص بك).</p>`;
         }
 
-        alert(`تم احتساب تفاصيل رحلة "سكة":\n\n المسافة الفعليّة: ${distance} كم\n💰 إجمالي التكلفة التقديرية (10 ج/كم): ${totalPrice.toFixed(2)} جنيه مصري.\n\nسيتم إرسال الطلب فوراً لشبكة الكباتن المتاحة.`);
-        
-        // هنا يتم مستقبلاً إضافة كود الـ Fetch لربط السيرفر وإرسال الرسالة لتليجرام الكابتن مباشرة
-    }
-</script>
-</body>
-</html>
+        // حساب عمولة التطبيق 15% وصافي دخل الكابتن في محفظته
+        let appCommission = totalRideCost * 0.15;
+        let captainNet = totalRideCost - appCommission;
+
+        invoiceHtml += `
+            <hr style="border-color:#444;">
+            <p style="color:#f1c40f;">🏁 إجمالي دخل الرحلة: <b>${totalRideCost.toFixed(2)} جنيه</b></p>
+            <p style="color:#2ecc71;">👑 عمولتك كصاحب تطبيق (15%): <b>${appCommission.toFixed(2)} جنيه</b></p>
+            <p style="color:#3498db;">🚗 صافي أرباح الكابتن في المحفظة: <b>${captainNet.toFixed(2)} جنيه</b></p>
