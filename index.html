@@ -2,165 +2,216 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سكة | Sekka</title>
     
-    <!-- روابط مستقرة جداً ومحدثة لمكتبة الخرائط Leaflet -->
-    <link rel="stylesheet" href="https://cloudflare.com" integrity="sha512-Zcn69THRFIfTLbyC36M46g0Uv+77P6M8f88C37C3aWJ85bE3d9+E6+b121bWjU82D5C3aWJ8== " crossorigin="" />
-    
+    <!-- استدعاء ملفات تشغيل خريطة Leaflet الآمنة والمجانية تماماً 100% -->
+    <link rel="stylesheet" href="https://unpkg.com" crossorigin="" />
+    <script src="https://unpkg.com" crossorigin=""></script>
+
     <style>
-        html, body {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: #e5e3df; color: #333;
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: white;
+            text-align: center;
         }
-
-        /* تحديد أبعاد ثابتة ومجبرة للخريطة في الأعلى */
         #map {
-            width: 100% !important;
-            height: 55vh !important; /* تأخذ 55% من طول شاشة الموبايل */
-            z-index: 10;
-            background-color: #e5e3df;
+            width: 100%;
+            height: 45vh; /* الخريطة ستشغل النصف العلوي من شاشة الهاتف */
+            background-color: #222;
+            border-bottom: 3px solid #f39c12;
         }
-
-        /* لوحة التحكم السفلي */
-        .controls-panel {
-            background: white; 
-            padding: 15px 20px 25px 20px;
-            border-top-left-radius: 25px; 
-            border-top-right-radius: 25px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
-            z-index: 999;
-            box-sizing: border-box;
-            flex: 1;
-            overflow-y: auto;
+        .container {
+            padding: 15px;
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .status-box {
-            background: #fffde7; padding: 12px; border-radius: 10px;
-            text-align: center; font-size: 0.95rem; font-weight: bold;
-            color: #f57f17; border: 1px solid #fff59d; margin-bottom: 12px;
+        .card {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+            border: 1px solid #333;
         }
-        .form-group { margin-bottom: 12px; }
-        label { font-size: 0.85rem; color: #666; display: block; margin-bottom: 5px; }
-        select {
-            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px;
-            font-size: 0.95rem; background-color: white; color: #333;
-            box-sizing: border-box;
+        .instruction {
+            font-size: 0.95rem;
+            color: #f1c40f;
+            margin-bottom: 12px;
+            background: #2c2c2c;
+            padding: 10px;
+            border-radius: 6px;
+            border-right: 4px solid #f39c12;
+            font-weight: bold;
         }
-        .seats-container { display: flex; gap: 10px; }
-        .seat-btn {
-            flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px;
-            background: #f1f3f5; color: #333; cursor: pointer; text-align: center; font-weight: bold;
+        select, .seat-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 5px;
+            margin-bottom: 15px;
         }
-        .seat-btn.active { background-color: #28a745; color: white; border-color: #28a745; }
-        
-        .action-btn {
-            background-color: #f39c12; color: white; border: none; padding: 15px;
-            width: 100%; border-radius: 10px; font-size: 1.1rem; font-weight: bold;
-            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-            box-sizing: border-box;
+        .seats-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
         }
-        .action-btn:active { background-color: #d6860b; }
+        .seat-option {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            padding: 10px;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .seat-option.active {
+            background: #27ae60;
+            border-color: #2ecc71;
+        }
+        .btn-main {
+            background-color: #f39c12;
+            color: black;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .btn-main:active {
+            background-color: #e67e22;
+        }
+        .info-text {
+            font-size: 0.85rem;
+            color: #aaa;
+            text-align: right;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- الخريطة في النصف العلوي -->
+    <!-- منطقة الخريطة الحية السحابية -->
     <div id="map"></div>
 
-    <!-- واجهة الاختيارات في الأسفل -->
-    <div class="controls-panel">
-        <div id="status-text" class="status-box">📍 اضغط على الشاشة الرمادية بالأعلى لتحديد [مكان الركوب]</div>
-        
-        <div class="form-group">
-            <label>نوع الرحلة</label>
-            <select><option>رحلة فورية (الآن) ⚡</option></select>
-        </div>
+    <div class="container">
+        <div class="card">
+            <div id="instruction" class="instruction">📍 اضغط على الخريطة لتحديد [مكان الركوب]</div>
+            
+            <div class="info-text">نوع الرحلة</div>
+            <select id="ride-type">
+                <option value="instant">رحلة فورية (الآن) ⚡</option>
+                <option value="scheduled">رحلة مجدولة لاحقاً 📅</option>
+            </select>
 
-        <div class="form-group">
-            <label>نوع الرحلة المطلوبة</label>
-            <select><option>رحلة خاصة (ملاكي بالكامل) 🔒</option></select>
-        </div>
+            <div class="info-text">نوع الرحلة المطلوبة</div>
+            <select id="car-type">
+                <option value="private">رحلة خاصة (ملاكي بالكامل) 🔒</option>
+                <option value="combo">رحلة جماعية (كومبو شاتل) 👥</option>
+            </select>
 
-        <div class="form-group">
-            <label>عدد المقاعد المطلوبة</label>
+            <div class="info-text">عدد المقاعد المطلوبة</div>
             <div class="seats-container">
-                <div class="seat-btn" onclick="selectSeat(this, 1)">1 مقعد</div>
-                <div class="seat-btn active" onclick="selectSeat(this, 2)">2 مقعد</div>
-                <div class="seat-btn" onclick="selectSeat(this, 3)">3 مقعد</div>
+                <div class="seat-option active" onclick="setSeats(1, this)">1 مقعد</div>
+                <div class="seat-option" onclick="setSeats(2, this)">2 مقعد</div>
+                <div class="seat-option" onclick="setSeats(3, this)">3 مقعد</div>
             </div>
+
+            <button class="btn-main" onclick="submitRide()">🚕 تأكيد وطلب سكة</button>
         </div>
-        
-        <button class="action-btn" onclick="triggerAction()">تأكيد وطلب سكة 🚕</button>
     </div>
 
-    <!-- استدعاء ملف تشغيل الخرائط الجافا سكريبت من خادم CDN موثوق ومحمي -->
-    <script src="https://cloudflare.com" integrity="sha512-Bw7v6XbH0bF7I6K50F1bM21kY0U7bV84X2O0hV6bX1111k8z2O0== " crossorigin=""></script>
-    <script>
-        let map, userMarker, targetMarker;
-        let stage = 'pickup'; 
-        let selectedSeats = 2;
+<script>
+    let map;
+    let originMarker = null;
+    let destinationMarker = null;
+    let selectionStage = 'origin'; // تتحول إلى 'destination' بعد الضغط الأول
+    let selectedSeats = 1;
 
-        // إطلاق الخريطة وضبط الإعدادات لتحديث أبعاد العرض تلقائياً
-        map = L.map('map', { zoomControl: false, trackResize: true }).setView([30.0444, 31.2357], 13);
-        
-        // استخدام خادم تحميل شوارع بديل وسريع جداً
-        L.tileLayer('https://openstreetmap.org{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+    // 1. تشغيل الخريطة والتركيز التلقائي على إحداثيات القاهرة والمحافظات المحيطة بها مجاناً بالكامل
+    const defaultCoords = [30.0444, 31.2357];
+    map = L.map('map', { zoomControl: true }).setView(defaultCoords, 11);
 
-        L.control.zoom({ position: 'topright' }).addTo(map);
+    // 2. تحميل طبقات الخرائط المؤمنة بـ HTTPS من سيرفر OpenStreetMap الرسمي لتعمل على الهواتف مباشرة
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        // حل مشكلة الشاشة الرمادية عبر إجبار الخريطة على إعادة حساب المقاسات بعد نصف ثانية
-        setTimeout(function() {
-            map.invalidateSize();
-        }, 500);
-
-        // التقاط موقع الـ GPS
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const myLoc = [position.coords.latitude, position.coords.longitude];
-                map.setView(myLoc, 15);
-                userMarker = L.marker(myLoc).addTo(map).bindPopup("مكانك الحالي 📍").openPopup();
-                map.invalidateSize();
-            }, () => {
-                console.log("الرجاء تفعيل الـ GPS");
-            });
-        }
-
-        // تحديد النقاط بالضغط
-        map.on('click', function(e) {
-            if (stage === 'pickup') {
-                if (userMarker) map.removeLayer(userMarker);
-                userMarker = L.marker(e.latlng).addTo(map).bindPopup("<b>نقطة الركوب 📍</b>").openPopup();
-                stage = 'destination';
-                document.getElementById('status-text').innerText = "🏁 ممتاز! اضغط الآن لتحديد [وجهة الوصول]";
-            } else {
-                if (targetMarker) map.removeLayer(targetMarker);
-                targetMarker = L.marker(e.latlng).addTo(map).bindPopup("<b>وجهة الوصول 🏁</b>").openPopup();
-                stage = 'pickup';
-                document.getElementById('status-text').innerText = "✔️ تم تحديد المسار بالكامل! اضغط تأكيد الطلب.";
-            }
+    // محاولة التقاط موقع العميل بالـ GPS إذا سمح بذلك لتسهيل الاختيار
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            map.setView([position.coords.latitude, position.coords.longitude], 14);
         });
+    }
 
-        function selectSeat(element, count) {
-            document.querySelectorAll('.seat-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
-            selectedSeats = count;
+    // 3. التحكم بالنقر على الخريطة لتسجيل نقطة البداية والنهاية
+    map.on('click', function(e) {
+        handleMapClick(e.latlng);
+    });
+
+    function handleMapClick(latlng) {
+        if (selectionStage === 'origin') {
+            if (originMarker) map.removeLayer(originMarker);
+            
+            originMarker = L.marker(latlng).addTo(map).bindPopup("<b>نقطة الركوب (A)</b>").openPopup();
+            window.pickupCoords = latlng;
+            
+            selectionStage = 'destination';
+            document.getElementById('instruction').innerText = "🏁 ممتاز! اضغط الآن لتحديد [وجهة الوصول]";
+            document.getElementById('instruction').style.borderRightColor = "#2ecc71";
+            document.getElementById('instruction').style.color = "#2ecc71";
+        } else if (selectionStage === 'destination') {
+            if (destinationMarker) map.removeLayer(destinationMarker);
+            
+            destinationMarker = L.marker(latlng).addTo(map).bindPopup("<b>وجهة الوصول (B)</b>").openPopup();
+            window.dropoffCoords = latlng;
+            
+            selectionStage = 'origin'; // إرجاع المنظومة جاهزة لإعادة التحديد إذا أخطأ
+            document.getElementById('instruction').innerText = "✅ تم تحديد المسار! يمكنك الضغط على تأكيد أو إعادة التحديد بنقرة جديدة.";
+            document.getElementById('instruction').style.borderRightColor = "#f39c12";
+            document.getElementById('instruction').style.color = "#f39c12";
+        }
+    }
+
+    function setSeats(num, element) {
+        selectedSeats = num;
+        let options = document.querySelectorAll('.seat-option');
+        options.forEach(opt => opt.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    function submitRide() {
+        if (!window.pickupCoords || !window.dropoffCoords) {
+            alert("برجاء تحديد موقع الركوب والوجهة على الخريطة أولاً.");
+            return;
+        }
+        
+        // حساب مسافة مستقيمة تقريبية بالكيلومتر بين النقطتين لتحديد السعر الفوري
+        const distance = (map.distance(window.pickupCoords, window.dropoffCoords) / 1000).toFixed(2);
+        const pricePerKm = 10;
+        let totalPrice = distance * pricePerKm;
+
+        // منطق الميكروباصات والرحلات المشتركة: إذا كانت المقاعد أكثر من 3 أشخاص قسّم التكلفة
+        if (selectedSeats > 3) {
+            totalPrice = totalPrice / selectedSeats;
         }
 
-        function triggerAction() {
-            if (!userMarker || !targetMarker) {
-                alert("برجاء تحديد موقع الركوب والوجهة على الخريطة أولاً بلمس الشاشة.");
-                return;
-            }
-            alert(`🚀 تم إرسال طلبك بنجاح! \nالمقاعد: ${selectedSeats} \nجاري البحث عن كابتن على نفس السكة...`);
-        }
-    </script>
+        alert(`تم احتساب تفاصيل رحلة "سكة":\n\n المسافة الفعليّة: ${distance} كم\n💰 إجمالي التكلفة التقديرية (10 ج/كم): ${totalPrice.toFixed(2)} جنيه مصري.\n\nسيتم إرسال الطلب فوراً لشبكة الكباتن المتاحة.`);
+        
+        // هنا يتم مستقبلاً إضافة كود الـ Fetch لربط السيرفر وإرسال الرسالة لتليجرام الكابتن مباشرة
+    }
+</script>
 </body>
 </html>
