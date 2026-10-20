@@ -5,20 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منصة سكة | Sekka</title>
     
-    <!-- 1. إصلاح روابط الخرائط العالمية المفتوحة وإضافة ملفاتها بشكل صحيح -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <script src="https://unpkg.com"></script>
+    <!-- استدعاء المكتبات الرسمية والآمنة 100% للموبايل -->
+    <link rel="stylesheet" href="https://unpkg.com" crossorigin="" />
+    <script src="https://unpkg.com" crossorigin=""></script>
 
     <style>
         html, body { height: 100%; margin: 0; padding: 0; background-color: #121212; color: white; font-family: Arial, sans-serif; }
         
-        /* إجبار حاوية الخريطة على الظهور بأبعاد واضحة صحيحة */
+        /* ضبط الحاوية لضمان رندرة الخريطة دون اختفاء الشوارع */
         #map {
             width: 100%;
             height: 300px;
-            background-color: #1e1e1e;
+            background-color: #1a1a1a;
             border-bottom: 3px solid #f39c12;
             position: relative;
+            z-index: 1;
         }
         .container { padding: 12px; max-width: 480px; margin: 0 auto; box-sizing: border-box; }
         .card { background: #1e1e1e; border-radius: 12px; padding: 15px; border: 1px solid #333; }
@@ -83,18 +84,23 @@
     let selectedSeats = 1;
     let pickupCoords = null, dropoffCoords = null;
 
-    // 2. ضبط إعدادات الخريطة لتفتح على القاهرة تلقائياً بشكل مستقر وسلس
-    map = L.map('map', { zoomControl: true, tap: false }).setView([30.0444, 31.2357], 12);
+    // تهيئة الخريطة على إحداثيات القاهرة مع تفعيل دعم اللمس للهواتف الذكية
+    map = L.map('map', { 
+        zoomControl: true, 
+        tap: window.L.Browser.pointer ? false : true 
+    }).setView([30.0444, 31.2357], 12);
     
-    // 3. تصحيح سيرفر الخرائط للوضع الليلي الداكن (Dark Mode) ليناسب تصميم تطبيقك
-    L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
+    // استخدام السيرفر الرسمي الآمن بنسبة 100% والمشفر لـ OpenStreetMap ليتخطى جدار حماية تليجرام
+    L.tileLayer('https://openstreetmap.org{z}/{x}/{y}.png', {
+        maxZoom: 19,
         attribution: '© OpenStreetMap'
     }).addTo(map);
     
-    // إجبار المتصفح على رندرة حجم الخريطة فوراً لمنع أي لون أبيض
-    setTimeout(function(){ map.invalidateSize(); }, 300);
+    // إجبار النظام على رسم تفاصيل الخريطة بعد التحميل مباشرة لمنع البياض أو الاختفاء
+    setTimeout(function(){ 
+        map.invalidateSize(true); 
+    }, 400);
 
-    // تفعيل اختيار النقاط عند الضغط بلمس الشاشة
     map.on('click', function(e) {
         if (stage === 'origin') {
             if (originMarker) map.removeLayer(originMarker);
@@ -152,7 +158,6 @@
             return;
         }
         
-        // حساب المسافة الحقيقية بين النقطتين بالكيلومترات
         const distance = (map.distance(pickupCoords, dropoffCoords) / 1000).toFixed(2);
         const baseFare = 10;
         const ratePerKm = isSurge ? 15 : 10;
