@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سكة - Sekka App</title>
+    <script src="https://telegram.org"></script>
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
+        body, html { height: 100%; background: #f5f6fa; color: #2f3640; }
+        #map { height: 50vh; width: 100%; position: relative; }
+        .panel { padding: 15px; height: 50vh; display: flex; flex-direction: column; justify-content: space-between; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); position: relative; z-index: 1000; }
+        .scroll-zone { overflow-y: auto; flex: 1; margin-bottom: 10px; padding-right: 5px; }
+        .row { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #7f8c8d; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 8px; font-size: 14px; background: #f8f9fa; }
+        .seats-box { display: flex; gap: 8px; margin-top: 5px; }
+        .seat-btn { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; text-align: center; font-size: 12px; background: #f1f2f6; cursor: pointer; }
+        .seat-btn.active { background: #27ae60; color: white; border-color: #27ae60; }
+        .summary { background: #fff2cc; border: 1px solid #f1c40f; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; }
+        .btn-main { background: #f39c12; color: white; border: none; padding: 14px; font-size: 16px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; transition: background 0.2s; }
+        .btn-main:hover { background: #e67e22; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="panel">
+        <div class="scroll-zone">
+            <div class="row">
+                <label>نوع التوقيت</label>
+                <select id="time-type">
+                    <option value="now">رحلة فورية (الآن) ⚡</option>
+                    <option value="schedule">جدولة رحلة (لاحقاً) 📅</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>نوع الرحلة</label>
+                <select id="ride-type">
+                    <option value="shared">رحلة مشتركة (تجميع وتوفير) 👥</option>
+                    <option value="private">رحلة خاصة (ملاكي بالكامل) 🔒</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>عدد المقاعد المطلوبة</label>
+                <div class="seats-box">
+                    <div class="seat-btn active" onclick="setSeats(1)">1 مقعد</div>
+                    <div class="seat-btn" onclick="setSeats(2)">2 مقعد</div>
+                    <div class="seat-btn" onclick="setSeats(3)">3 مقعد</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="summary" id="fare-box">اضغط على الخريطة لتحديد موقع الركوب والوجهة</div>
+        </div>
+
+        <button class="btn-main" onclick="submitTrip()">تأكيد وطلب سكة 🚖</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const map = L.map('map').setView([30.0444, 31.2357], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let markers = [];
+        let coords = [];
+        let selectedSeats = 1;
+
+        map.on('click', function(e) {
+            if (markers.length >= 2) {
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+                coords = [];
+            }
+
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            coords.push([lat, lng]);
+
+            const label = markers.length === 0 ? "نقطة الركوب 📍" : "الوجهة النهائية 🏁";
+            const marker = L.marker([lat, lng]).addTo(map).bindPopup(label).openPopup();
+            markers.push(marker);
+
+            calculateFare();
+        });
+
+        function setSeats(num) {
+            selectedSeats = num;
+            document.querySelectorAll('.seat-btn').forEach((btn, idx) => {
+                if (idx === num - 1) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            calculateFare();
+        }
+
+        function calculateFare() {
+            if (coords.length < 2) return;
+            let p1 = coords[0];
+            let p2 = coords[1];
+            let d = Math.sqrt(Math.pow(p1[0]-p2[0], 2) + Math.pow(p1[1]-p2[1], 2)) * 111;
+            
+            let baseFare = 10 * selectedSeats;
+            let costPerKm = 10;
+            let rideType = document.getElementById('ride-type').value;
+            
+            let finalFare = baseFare + (d * costPerKm);
+            if (rideType === 'shared') {
+                finalFare = baseFare + ((d * costPerKm) / 2); // تقسيم عادل بالتجميع
+            }
+            
+            document.getElementById('fare-box').innerText = `المسافة: ${d.toFixed(1)} كم | الأجرة التقديرية: ${Math.round(finalFare)} جنيه`;
+            return Math.round(finalFare);
+        }
+
+        document.getElementById('ride-type').addEventListener('change', calculateFare);
+
+        function submitTrip() {
+            if (coords.length < 2) {
+                alert("برجاء اختيار نقطة الركوب والوجهة على الخريطة أولاً بلمس الشاشة.");
+                return;
+            }
+            
+            const payload = {
+                action: "new_shared_ride",
+                time_type: document.getElementById('time-type').value,
+                ride_type: document.getElementById('ride-type').value,
+                seats: selectedSeats,
+                pickup: coords[0],
+                dropoff: coords[1],
+                fare: calculateFare()
+            };
+
+            tg.sendData(JSON.stringify(payload));
+            tg.close();
+        }
+    </script>
+</body>
+</html>
