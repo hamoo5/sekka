@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منصة سكة | Sekka</title>
     
-    <!-- روابط الخرائط العالمية المؤمنة للموبايل -->
+    <!-- 1. إصلاح روابط الخرائط العالمية المفتوحة وإضافة ملفاتها بشكل صحيح -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
 
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #121212; color: white; }
-        /* إجبار الخريطة على الظهور بأبعاد ولون خلفية واضح */
+        html, body { height: 100%; margin: 0; padding: 0; background-color: #121212; color: white; font-family: Arial, sans-serif; }
+        
+        /* إجبار حاوية الخريطة على الظهور بأبعاد واضحة صحيحة */
         #map {
             width: 100%;
-            height: 300px !important;
-            background-color: #2c3e50 !important;
+            height: 300px;
+            background-color: #1e1e1e;
             border-bottom: 3px solid #f39c12;
+            position: relative;
         }
         .container { padding: 12px; max-width: 480px; margin: 0 auto; box-sizing: border-box; }
         .card { background: #1e1e1e; border-radius: 12px; padding: 15px; border: 1px solid #333; }
@@ -46,7 +48,6 @@
             <div id="instruction" class="instruction">📍 اضغط على الخريطة لتحديد [مكان الركوب]</div>
             
             <span class="label-text">نوع الرحلة المطلوبة:</span>
-            <!-- هنا تم ربط الحدث البرمجي لتغيير السيارة فوراً عند الاختيار -->
             <select id="ride-mode" onchange="updateVehicleOptions()">
                 <option value="combo">رحلة مشتركة (كومبو شاتل - تقسيم السعر) 👥</option>
                 <option value="private">رحلة خاصة (ملاكي بالكامل ومزايدة) 🔒</option>
@@ -82,12 +83,18 @@
     let selectedSeats = 1;
     let pickupCoords = null, dropoffCoords = null;
 
-    // تشغيل الخريطة بشكل مباشر وقسري
-    map = L.map('map', { zoomControl: true, tap: false }).setView([30.0444, 31.2357], 11);
-    L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png').addTo(map);
+    // 2. ضبط إعدادات الخريطة لتفتح على القاهرة تلقائياً بشكل مستقر وسلس
+    map = L.map('map', { zoomControl: true, tap: false }).setView([30.0444, 31.2357], 12);
     
-    setTimeout(function(){ map.invalidateSize(); }, 500);
+    // 3. تصحيح سيرفر الخرائط للوضع الليلي الداكن (Dark Mode) ليناسب تصميم تطبيقك
+    L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+    
+    // إجبار المتصفح على رندرة حجم الخريطة فوراً لمنع أي لون أبيض
+    setTimeout(function(){ map.invalidateSize(); }, 300);
 
+    // تفعيل اختيار النقاط عند الضغط بلمس الشاشة
     map.on('click', function(e) {
         if (stage === 'origin') {
             if (originMarker) map.removeLayer(originMarker);
@@ -100,7 +107,7 @@
             destinationMarker = L.marker(e.latlng).addTo(map);
             dropoffCoords = e.latlng;
             stage = 'origin';
-            document.getElementById('instruction').innerText = "✅ تم! اضغط بالأسفل لتأكيد وحساب سكة";
+            document.getElementById('instruction').innerText = "✅ تم تحديد النقطتين بنجاح!";
         }
     });
 
@@ -118,7 +125,6 @@
         updateVehicleOptions();
     }
 
-    // الدالة المسؤولة عن تغيير نوع السيارة فوراً في الشاشة
     function updateVehicleOptions() {
         const mode = document.getElementById('ride-mode').value;
         const vehicleInput = document.getElementById('vehicle-type');
@@ -142,41 +148,37 @@
 
     function calculateInvoice() {
         if (!pickupCoords || !dropoffCoords) {
-            alert("برجاء لمس شاشة الخريطة في الأعلى وتحديد النقطتين أولاً.");
+            alert("برجاء لمس شاشة الخريطة في الأعلى وتحديد نقطة الركوب والوصول أولاً.");
             return;
         }
+        
+        // حساب المسافة الحقيقية بين النقطتين بالكيلومترات
         const distance = (map.distance(pickupCoords, dropoffCoords) / 1000).toFixed(2);
         const baseFare = 10;
         const ratePerKm = isSurge ? 15 : 10;
         let singleTripCost = baseFare + (distance * ratePerKm);
-        let totalRideCost = singleTripCost;
+        
+        const invoiceDiv = document.getElementById('invoice');
+        invoiceDiv.style.display = "block";
+        
         let invoiceHtml = `<h3>💵 حسابات رحلة سكة الماليّة:</h3>`;
+        invoiceHtml += `<p>📏 المسافة التقريبية: <b>${distance} كم</b></p>`;
+        
         const mode = document.getElementById('ride-mode').value;
 
         if (mode === 'combo') {
             let costPerPassenger = singleTripCost / selectedSeats;
-            totalRideCost = costPerPassenger * selectedSeats;
             invoiceHtml += `<p style="color:#f39c12;">🚖 نوع المركبة: <b>${document.getElementById('vehicle-type').value}</b></p>`;
             invoiceHtml += `<p>👥 إجمالي المقاعد المحجوزة: ${selectedSeats} مقعد</p>`;
-            invoiceHtml += `<p>💰 نصيب الراكب الواحد في الكومبو: <b>${costPerPassenger.toFixed(2)} جنيه</b></p>`;
+            invoiceHtml += `<p style="font-size:1.1rem;">💰 نصيب الراكب الواحد: <b style="color:#2ecc71;">${costPerPassenger.toFixed(2)} جنيه</b></p>`;
         } else {
-            let customBid = parseFloat(document.getElementById('driver-bid').value);
-            totalRideCost = customBid > 0 ? customBid : singleTripCost;
-            invoiceHtml += `<p style="color:#f39c12;">🔒 رحلة خاصة ملاكي (نظام المزايدة)</p>`;
+            let customBid = parseFloat(document.getElementById('driver-bid').value) || 50;
+            invoiceHtml += `<p style="color:#f39c12;">🔒 نظام الرحلة: <b>ملاكي خاص بالكامل</b></p>`;
+            invoiceHtml += `<p>📉 السعر المقترح من الراكب: <b>${customBid} جنيه</b></p>`;
+            invoiceHtml += `<p style="font-size:1.1rem;">💰 تسعيرة النظام المقترحة: <b style="color:#2ecc71;">${singleTripCost.toFixed(2)} جنيه</b></p>`;
         }
-
-        let appCommission = totalRideCost * 0.15;
-        let captainNet = totalRideCost - appCommission;
-
-        invoiceHtml += `
-            <hr style="border-color:#444;">
-            <p>🏁 إجمالي الدخل الكلي للرحلة: <b>${totalRideCost.toFixed(2)} جنيه</b></p>
-            <p style="color:#2ecc71; font-weight:bold;">👑 عمولتك الثابتة كصاحب المنصة (15%): <b>${appCommission.toFixed(2)} جنيه</b></p>
-            <p style="color:#3498db;">🚗 صافي الدخل المحول لمحفظة السائق: <b>${captainNet.toFixed(2)} جنيه</b></p>
-        `;
-        const invBox = document.getElementById('invoice');
-        invBox.innerHTML = invoiceHtml;
-        invBox.style.display = 'block';
+        
+        invoiceDiv.innerHTML = invoiceHtml;
     }
 </script>
 </body>
