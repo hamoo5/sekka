@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منصة سكة | Sekka</title>
     
-    <!-- تصحيح السطر 9: استدعاء ملف الـ CSS الكامل والمكتمل للخرائط -->
-    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- ⚠️ السطر الأهم: استدعاء مكتبة تليجرام الرسمية لتفعيل الأمان وفك الحظر عن الخريطة -->
+    <script src="https://telegram.org"></script>
     
-    <!-- تصحيح السطر 10: استدعاء ملف الـ JS الكامل والمكتمل لتشغيل الخريطة -->
+    <!-- استدعاء ملفات الخرائط المجانية Leaflet كاملة -->
+    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <style>
@@ -50,20 +51,20 @@
             
             <span class="label-text">نوع الرحلة المطلوبة</span>
             <select id="ride-mode" onchange="updateVehicleOptions()">
-                <option value="combo">تقسيم السعر (شاتل كومبو)</option>
+                <option value="combo">رحلة مشتركة (كومبو شاتل - تقسيم السعر) 👥</option>
                 <option value="private">طلب خاص (ملاكي ومزايدة)</option>
             </select>
 
-            <span class="label-text">المركبة تلقائياً للاسطول</span>
+            <span class="label-text">السيارة المقترحة تلقائياً للاسطول:</span>
             <input type="text" id="vehicle-type" value="عربية سوزوكي" readonly>
 
             <div id="seats-section">
-                <span class="label-text">عدد المقاعد المطلوبة</span>
+                <span class="label-text">عدد المقاعد المطلوبة:</span>
                 <div class="seats-container">
-                    <div class="seat-option active" onclick="setSeats(1, this)">1</div>
-                    <div class="seat-option" onclick="setSeats(2, this)">2</div>
-                    <div class="seat-option" onclick="setSeats(3, this)">3</div>
-                    <div class="seat-option" onclick="setSeats(4, this)">4</div>
+                    <div class="seat-option active" onclick="setSeats(1, this)">1 مقعد</div>
+                    <div class="seat-option" onclick="setSeats(2, this)">2 مقعد</div>
+                    <div class="seat-option" onclick="setSeats(3, this)">3 مقعد</div>
+                    <div class="seat-option" onclick="setSeats(4, this)">4 مقعد</div>
                 </div>
             </div>
 
@@ -79,26 +80,34 @@
     </div>
 
     <script>
+        // إعلام تليجرام أن التطبيق جاهز للعمل وفك حظر الخريطة
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // فرد الشاشة كاملة في الموبايل
+        }
+
         let map, originMarker, destinationMarker;
         let stage = 'origin';
         let isSurge = false;
         let selectedSeats = 1;
         let pickupCoords = null, dropoffCoords = null;
 
-        // تهيئة الخريطة بشكل صحيح وآمن للموبايل
+        // تشغيل الخريطة مع تفعيل إعدادات اللمس لشاشات الموبايل
         map = L.map('map', {
-            zoomControl: true,
-            tap: window.L.Browser.pointer ? false : true
+            zoomControl: false,
+            dragging: true,
+            touchZoom: true,
+            tap: false
         }).setView([30.0444, 31.2357], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19
         }).addTo(map);
 
+        // إجبار المتصفح على رندر الخريطة فوراً وعدم إظهار لون أسود
         setTimeout(function(){
             map.invalidateSize(true);
-        }, 400);
+        }, 300);
 
         map.on('click', function(e) {
             if (stage === 'origin') {
@@ -157,7 +166,6 @@
                 return;
             }
 
-            // حساب المسافة المباشرة الحقيقية باستخدام Leaflet
             const distance = (pickupCoords.distanceTo(dropoffCoords) / 1000).toFixed(2);
             const baseFare = 10;
             const ratePerKm = isSurge ? 15 : 10;
@@ -175,12 +183,9 @@
                 let costPerPassenger = (singleTripCost / selectedSeats).toFixed(2);
                 invoiceHtml += `<p style="color:#f39c12;">💰 <b>حساب المقعد الواحد الكومبو:</b> ${costPerPassenger} جنيه</p>`;
                 invoiceHtml += `<p>👥 <b>حجز مقاعد:</b> ${selectedSeats} مقعد</p>`;
-                invoiceHtml += `<p style="font-size:0.8rem; color:#888;">(تم تقسيم إجمالي الرحلة البالغ ${singleTripCost.toFixed(2)} ج بالتساوي)</p>`;
             } else {
                 let customBid = parseFloat(document.getElementById('driver-bid').value) || singleTripCost;
                 invoiceHtml += `<p style="color:#f39c12;">💎 <b>إجمالي قيمة الرحلة الخاصة:</b> ${customBid.toFixed(2)} جنيه</p>`;
-                invoiceHtml += `<p>🚗 <b>السعر المقترح من الراكب للمزايدة</b></p>`;
-                invoiceHtml += `<p style="font-size:0.8rem; color:#888;">(السعر الأساسي للنظام بدون مزايدة: ${singleTripCost.toFixed(2)} ج)</p>`;
             }
 
             invoiceDiv.innerHTML = invoiceHtml;
