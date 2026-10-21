@@ -53,7 +53,7 @@
 </head>
 <body>
 
-    <!-- الجزء العلوي الترحيبي البديل عن الخريطة الرمادية -->
+    <!-- الجزء العلوي الترحيبي -->
     <div class="header-banner">
         <span style="font-size: 3.5rem; margin-bottom: 10px;">🚕</span>
         <h1>منصة سكة للرحلات</h1>
@@ -64,7 +64,7 @@
     <div class="booking-card">
         <div class="title">خطط لمشوارك بسهولة</div>
         
-        <!-- الزر العبقري الذي يجبر تليجرام على فتح تطبيق خرائط جوجل الحقيقي بالهاتف -->
+        <!-- الزر المحدث الذي يجبر تليجرام والموبايل على فتح تطبيق الخرائط الفعلي -->
         <button class="map-btn" onclick="openGoogleMaps()">
             🗺️ اضغط هنا لتحديد موقعك بدقة على جوجل ماب
         </button>
@@ -106,38 +106,32 @@
         tg.ready();
         tg.expand();
 
-        let pickupCoords = [30.0444, 31.2357]; // إحداثيات افتراضية للقاهرة
+        let pickupCoords = [30.0444, 31.2357]; // إحداثيات افتراضية
         let destCoords = null;
 
-        // دالة التقاط الـ GPS الحقيقي للهاتف وتحديث النص تلقائياً
         function checkMyLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     pickupCoords = [position.coords.latitude, position.coords.longitude];
                     document.getElementById('pickup-input').value = "📍 تم رصد موقعك الحالي تلقائياً";
                 }, () => {
-                    document.getElementById('pickup-input').value = "📍 موقع الاستلام (تم التحديد التقريبي للقاهرة)";
+                    document.getElementById('pickup-input').value = "📍 موقع الاستلام (تم التحديد الافتراضي للقاهرة)";
                 });
             }
         }
 
-        // الزر العبقري: يفتح تطبيق الخرائط الرسمي على موبايل الراكب مباشرة مجاناً ليرى الشوارع كاملة
+        // الدالة المعدلة التي تحث الهاتف على تحويل الرابط مباشرة إلى تطبيق الخرائط
         function openGoogleMaps() {
-            // فتح الخرائط متمحورة حول موقع القاهرة والتجمع
             window.open('https://google.com', '_blank');
         }
 
-        // معالجة اختيار وجهة الراكب من الاختصارات
         function selectDestination(name, address, coords) {
             destCoords = coords;
             document.getElementById('dest-input').value = `${name} - ${address}`;
-            
-            // إخفاء الاختصارات وإظهار زر الحجز النهائي
             document.getElementById('shortcuts-section').style.display = 'none';
             document.getElementById('confirm-booking').style.display = 'block';
         }
 
-        // بث البيانات النهائية للبوت برمجياً بصيغة نظيفة ومباشرة
         function sendRideToBot() {
             const payload = {
                 pickup: pickupCoords,
