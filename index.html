@@ -4,208 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منظومة كومبو للرحلات | خطط لمشوارك</title>
-    
-    <!-- روابط مكتبة Leaflet المفتوحة والآمنة بالكامل -->
-    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    <!-- مكتبة تليجرام ويب آب -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
     <script src="https://telegram.org"></script>
-    
     <style>
-        body, html {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f7f7f7; height: 100%; width: 100%;
-        }
-        /* تعديل ستايل حاوية الخريطة لضمان الظهور الفوري */
-        #map {
-            height: 45vh; 
-            width: 100%;
-            display: block;
-            background-color: #e5e3df;
-        }
-        .booking-card {
-            height: 55vh; 
-            background: white;
-            border-top-left-radius: 20px; 
-            border-top-right-radius: 20px;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
-            padding: 20px; 
-            box-sizing: border-box;
-            overflow-y: auto; /* للسماح بالتمرير داخل الموبايل */
-        }
-        .title {
-            text-align: center; font-size: 1.2rem;
-            font-weight: bold; margin-bottom: 15px; color: #222;
-        }
-        .input-group {
-            background: #f0f0f0; border-radius: 10px;
-            padding: 10px; margin-bottom: 15px;
-        }
-        .input-row {
-            display: flex; align-items: center; padding: 8px 0;
-        }
-        .input-row:first-child {
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .icon-dot {
-            width: 8px; height: 8px; background: black;
-            border-radius: 50%; margin: 0 10px;
-        }
-        .icon-square {
-            width: 8px; height: 8px; background: #000;
-            margin: 0 10px;
-        }
-        .location-text {
-            flex: 1; font-size: 0.95rem; color: #333;
-            cursor: pointer; border: none; background: transparent;
-            width: 100%; outline: none;
-        }
-        .shortcuts-title {
-            font-size: 0.85rem; color: #777; margin: 10px 0;
-        }
-        .shortcut-item {
-            display: flex; align-items: center;
-            padding: 12px 5px; border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-        }
-        .shortcut-icon {
-            font-size: 1.2rem; margin-left: 15px; color: #555;
-        }
-        .shortcut-info h4 {
-            margin: 0; font-size: 0.95rem; color: #222;
-        }
-        .shortcut-info p {
-            margin: 2px 0 0 0; font-size: 0.8rem; color: #777;
-        }
-        .confirm-btn {
-            background: black; color: white; border: none;
-            width: 100%; padding: 14px; font-size: 1.1rem;
-            font-weight: bold; border-radius: 8px;
-            cursor: pointer; margin-top: 10px; display: none;
-        }
+        body, html { margin: 0; padding: 0; font-family: sans-serif; background-color: #f7f7f7; height: 100vh; width: 100vw; overflow: hidden; }
+        #map { position: absolute; top: 0; left: 0; right: 0; height: 45vh; width: 100%; z-index: 1; background-color: #cbd5e1; }
+        .booking-card { position: absolute; bottom: 0; left: 0; right: 0; height: 55vh; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); padding: 20px; box-sizing: border-box; overflow-y: auto; z-index: 10; }
+        .title { text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; color: #222; }
+        .input-group { background: #f0f0f0; border-radius: 10px; padding: 10px; margin-bottom: 15px; }
+        .input-row { display: flex; align-items: center; padding: 8px 0; }
+        .input-row:first-child { border-bottom: 1px solid #e0e0e0; }
+        .icon-dot { width: 8px; height: 8px; background: black; border-radius: 50%; margin: 0 10px; }
+        .icon-square { width: 8px; height: 8px; background: #000; margin: 0 10px; }
+        .location-text { flex: 1; font-size: 0.95rem; color: #333; border: none; background: transparent; width: 100%; outline: none; }
+        .shortcuts-title { font-size: 0.85rem; color: #777; margin: 10px 0; }
+        .shortcut-item { display: flex; align-items: center; padding: 12px 5px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+        .shortcut-icon { font-size: 1.2rem; margin-left: 15px; color: #555; }
+        .shortcut-info h4 { margin: 0; font-size: 0.95rem; color: #222; }
+        .shortcut-info p { margin: 2px 0 0 0; font-size: 0.8rem; color: #777; }
+        .confirm-btn { background: black; color: white; border: none; width: 100%; padding: 14px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
-
-    <!-- حاوية الخريطة -->
     <div id="map"></div>
-
-    <!-- بطاقة الحجز -->
     <div class="booking-card">
         <div class="title">خطط لمشوارك الكومبو</div>
-        
         <div class="input-group">
-            <div class="input-row">
-                <div class="icon-dot"></div>
-                <input type="text" id="pickup-input" class="location-text" placeholder="جاري تحديد موقع الاستلام تلقائياً..." readonly>
-            </div>
-            <div class="input-row">
-                <div class="icon-square"></div>
-                <input type="text" id="dest-input" class="location-text" placeholder="إلى أين تتجه؟ اضغط على وجهة بالأسفل" readonly>
-            </div>
+            <div class="input-row"><div class="icon-dot"></div><input type="text" id="pickup-input" class="location-text" placeholder="جاري تحديد موقعك تلقائياً..." readonly></div>
+            <div class="input-row"><div class="icon-square"></div><input type="text" id="dest-input" class="location-text" placeholder="إلى أين تتجه؟ اختر وجهة بالأسفل" readonly></div>
         </div>
-
         <div id="shortcuts-section">
             <div class="shortcuts-title">اختر وجهتك من الاختصارات المحفوظة</div>
-            
-            <div class="shortcut-item" onclick="selectDestination('الحي السابع', 'مدينة نصر، محافظة القاهرة', [30.0531, 31.3398])">
-                <div class="shortcut-icon">🕒</div>
-                <div class="shortcut-info">
-                    <h4>الحي السابع</h4>
-                    <p>مدينة نصر، محافظة القاهرة</p>
-                </div>
-            </div>
-
-            <div class="shortcut-item" onclick="selectDestination('التجمع الخامس', 'شارع التسعين، القاهرة الجديدة', [30.0249, 31.4746])">
-                <div class="shortcut-icon">🏠</div>
-                <div class="shortcut-info">
-                    <h4>التجمع الخامس</h4>
-                    <p>شارع التسعين، القاهرة الجديدة</p>
-                </div>
-            </div>
-
-            <div class="shortcut-item" onclick="selectDestination('مدرسة المعادي الجديدة', 'المعادي، محافظة القاهرة', [29.9802, 31.2845])">
-                <div class="shortcut-icon">🕒</div>
-                <div class="shortcut-info">
-                    <h4>مدرسة المعادي الجديدة</h4>
-                    <p>المعادي، محافظة القاهرة</p>
-                </div>
-            </div>
+            <div class="shortcut-item" onclick="selectDestination('الحي السابع', 'مدينة نصر، محافظة القاهرة', [30.0531, 31.3398])"><div class="shortcut-icon">🕒</div><div class="shortcut-info"><h4>الحي السابع</h4><p>مدينة نصر، محافظة القاهرة</p></div></div>
+            <div class="shortcut-item" onclick="selectDestination('التجمع الخامس', 'شارع التسعين، القاهرة الجديدة', [30.0249, 31.4746])"><div class="shortcut-icon">🏠</div><div class="shortcut-info"><h4>التجمع الخامس</h4><p>شارع التسعين، القاهرة الجديدة</p></div></div>
+            <div class="shortcut-item" onclick="selectDestination('مدرسة المعادي الجديدة', 'المعادي، محافظة القاهرة', [29.9802, 31.2845])"><div class="shortcut-icon">🕒</div><div class="shortcut-info"><h4>مدرسة المعادي الجديدة</h4><p>المعادي، محافظة القاهرة</p></div></div>
         </div>
-
         <button id="confirm-booking" class="confirm-btn" onclick="sendRideToBot()">تأكيد وطلب الكومبو</button>
     </div>
-
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        let map;
-        let pickupCoords = [30.0444, 31.2357]; // موقع افتراضي (القاهرة)
-        let destCoords = null;
-        let pickupMarker, destMarker, routeLine;
-
+        const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+        let map, pickupCoords = [30.0444, 31.2357], destCoords = null, pickupMarker, destMarker, routeLine;
         function initMap() {
-            // تهيئة الخريطة بداخل الحاوية المصححة
             map = L.map('map', { zoomControl: false }).setView(pickupCoords, 13);
-            
-            // استدعاء السيرفر المفتوح لصور الشوارع
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-
-            // إجبار الخريطة على إعادة احتساب أبعادها لتلافي المشهد الرمادي بالموبايل
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 200);
-
-            // قراءة الـ GPS للمستخدم تلقائياً
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            setTimeout(() => { map.invalidateSize(true); }, 400);
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     pickupCoords = [position.coords.latitude, position.coords.longitude];
                     map.setView(pickupCoords, 15);
-                    
-                    pickupMarker = L.marker(pickupCoords).addTo(map).bindPopup("موقع الاستلام الحالي").openPopup();
-                    document.getElementById('pickup-input').value = "تم تحديد موقعك الحالي بدقة 📍";
+                    if (pickupMarker) map.removeLayer(pickupMarker);
+                    pickupMarker = L.marker(pickupCoords).addTo(map);
+                    document.getElementById('pickup-input').value = "تم رصد موقعك الحالي تلقائياً 📍";
                 }, () => {
                     pickupMarker = L.marker(pickupCoords).addTo(map);
-                    document.getElementById('pickup-input').value = "تم تحديد موقعك (افتراضي)";
+                    document.getElementById('pickup-input').value = "موقع الاستلام (افتراضي بالقاهرة)";
                 });
             }
         }
-
         function selectDestination(name, address, coords) {
-            destCoords = coords;
-            document.getElementById('dest-input').value = `${name} (${address})`;
-            
+            destCoords = coords; document.getElementById('dest-input').value = name;
             if (destMarker) map.removeLayer(destMarker);
-            destMarker = L.marker(destCoords).addTo(map).bindPopup(name).openPopup();
-
+            destMarker = L.marker(destCoords).addTo(map);
             if (routeLine) map.removeLayer(routeLine);
-            routeLine = L.polyline([pickupCoords, destCoords], {
-                color: 'black', weight: 4, opacity: 0.8, dashArray: '5, 10'
-            }).addTo(map);
-
-            const bounds = L.latLngBounds([pickupCoords, destCoords]);
-            map.fitBounds(bounds, { padding: [30, 30] });
-
+            routeLine = L.polyline([pickupCoords, destCoords], { color: 'black', weight: 4 }).addTo(map);
+            map.fitBounds(L.latLngBounds([pickupCoords, destCoords]), { padding: [30, 30] });
             document.getElementById('shortcuts-section').style.display = 'none';
             document.getElementById('confirm-booking').style.display = 'block';
         }
-
         function sendRideToBot() {
-            const payload = {
-                pickup: pickupCoords,
-                destination: destCoords,
-                destinationName: document.getElementById('dest-input').value
-            };
-            tg.sendData(JSON.stringify(payload));
+            tg.sendData(JSON.stringify({ pickup: pickupCoords, destination: destCoords, name: document.getElementById('dest-input').value }));
         }
-
         window.onload = initMap;
     </script>
 </body>
