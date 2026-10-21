@@ -3,193 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>منصة سكة | Sekka</title>
-    
-    <!-- ⚠️ السطر الأهم: استدعاء مكتبة تليجرام الرسمية لتفعيل الأمان وفك الحظر عن الخريطة -->
+    <title>منظومة كومبو للرحلات | خطط لمشوارك</title>
+    <!-- ملفات خريطة Leaflet المجانية -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+    <!-- مكتبة Telegram Web App لتوصيل البيانات بالبوت -->
     <script src="https://telegram.org"></script>
     
-    <!-- استدعاء ملفات الخرائط المجانية Leaflet كاملة -->
-    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; background-color: #121212; color: white; }
-        #map {
-            width: 100%;
-            height: 300px;
-            background-color: #1a1a1a;
-            border-bottom: 3px solid #f39c12;
-            position: relative;
-            z-index: 1;
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f7f7; height: 100%; overflow: hidden;
         }
-        .container { padding: 12px; max-width: 480px; margin: 0 auto; }
-        .card { background: #1e1e1e; border-radius: 8px; padding: 15px; margin-bottom: 12px; }
-        .instruction { font-size: 0.95rem; color: #f1c40f; font-weight: bold; margin-bottom: 10px; }
-        .surge-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .toggle-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-        select, input { width: 100%; padding: 10px; margin-top: 5px; background: #2a2a2a; color: white; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; }
-        .seats-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
-        .seat-option { background: #2a2a2a; border: 1px solid #444; padding: 10px; text-align: center; border-radius: 4px; cursor: pointer; }
-        .seat-option.active { background: #f39c12; color: black; font-weight: bold; border-color: #f39c12; }
-        .btn-main { background-color: #f39c12; color: black; font-weight: bold; border: none; padding: 14px; width: 100%; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 15px; }
-        .invoice-box { background: #1a1a1a; border: 1px solid #333; padding: 12px; border-radius: 6px; margin-top: 15px; display: none; }
-        .label-text { font-size: 0.85rem; color: #aaa; display: block; margin-top: 10px; }
+        #map {
+            height: 45vh; width: 100%;
+            background-color: #e5e3df;
+        }
+        .booking-card {
+            height: 55vh; background: white;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+            padding: 20px; box-sizing: border-box;
+            position: relative; z-index: 1000;
+        }
+        .title {
+            text-align: center; font-size: 1.2rem;
+            font-weight: bold; margin-bottom: 15px; color: #222;
+        }
+        .input-group {
+            background: #f0f0f0; border-radius: 10px;
+            padding: 10px; margin-bottom: 15px;
+        }
+        .input-row {
+            display: flex; align-items: center; padding: 8px 0;
+        }
+        .input-row:first-child {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .icon-dot {
+            width: 8px; height: 8px; background: black;
+            border-radius: 50%; margin: 0 10px;
+        }
+        .icon-square {
+            width: 8px; height: 8px; background: #000;
+            margin: 0 10px;
+        }
+        .location-text {
+            flex: 1; font-size: 0.95rem; color: #333;
+            cursor: pointer; border: none; background: transparent;
+            width: 100%; outline: none;
+        }
+        .shortcuts-title {
+            font-size: 0.85rem; color: #777; margin: 10px 0;
+        }
+        .shortcut-item {
+            display: flex; align-items: center;
+            padding: 12px 5px; border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .shortcut-icon {
+            font-size: 1.2rem; margin-left: 15px; color: #555;
+        }
+        .shortcut-info h4 {
+            margin: 0; font-size: 0.95rem; color: #222;
+        }
+        .shortcut-info p {
+            margin: 2px 0 0 0; font-size: 0.8rem; color: #777;
+        }
+        .confirm-btn {
+            background: black; color: white; border: none;
+            width: 100%; padding: 14px; font-size: 1.1rem;
+            font-weight: bold; border-radius: 8px;
+            cursor: pointer; margin-top: 10px; display: none;
+        }
     </style>
 </head>
 <body>
 
+    <!-- قسم الخريطة التفاعلية الفوقي -->
     <div id="map"></div>
 
-    <div class="container">
-        <div class="surge-section">
-            <span>⚡ وقت الذروة (التسعير المرتفع 15 ج/كم)</span>
-            <button id="surge-toggle" class="toggle-btn" onclick="toggleSurge()">مغلق 🚫</button>
+    <!-- بطاقة الحجز السفلية الشبيهة بأوبر -->
+    <div class="booking-card">
+        <div class="title">خطط لمشوارك الكومبو</div>
+        
+        <div class="input-group">
+            <div class="input-row">
+                <div class="icon-dot"></div>
+                <input type="text" id="pickup-input" class="location-text" placeholder="جاري تحديد موقع الاستلام تلقائياً..." readonly>
+            </div>
+            <div class="input-row">
+                <div class="icon-square"></div>
+                <input type="text" id="dest-input" class="location-text" placeholder="إلى أين تتجه؟ اضغط على وجهة بالأسفل" readonly>
+            </div>
         </div>
 
-        <div class="card">
-            <div id="instruction" class="instruction">📍 اضغط على الخريطة لتحديد نقطة الركوب</div>
+        <div id="shortcuts-section">
+            <div class="shortcuts-title">اختر وجهتك من الاختصارات المحفوظة</div>
             
-            <span class="label-text">نوع الرحلة المطلوبة</span>
-            <select id="ride-mode" onchange="updateVehicleOptions()">
-                <option value="combo">رحلة مشتركة (كومبو شاتل - تقسيم السعر) 👥</option>
-                <option value="private">طلب خاص (ملاكي ومزايدة)</option>
-            </select>
-
-            <span class="label-text">السيارة المقترحة تلقائياً للاسطول:</span>
-            <input type="text" id="vehicle-type" value="عربية سوزوكي" readonly>
-
-            <div id="seats-section">
-                <span class="label-text">عدد المقاعد المطلوبة:</span>
-                <div class="seats-container">
-                    <div class="seat-option active" onclick="setSeats(1, this)">1 مقعد</div>
-                    <div class="seat-option" onclick="setSeats(2, this)">2 مقعد</div>
-                    <div class="seat-option" onclick="setSeats(3, this)">3 مقعد</div>
-                    <div class="seat-option" onclick="setSeats(4, this)">4 مقعد</div>
+            <div class="shortcut-item" onclick="selectDestination('الحي السابع', 'مدينة نصر، محافظة القاهرة', [30.0531, 31.3398])">
+                <div class="shortcut-icon">🕒</div>
+                <div class="shortcut-info">
+                    <h4>الحي السابع</h4>
+                    <p>مدينة نصر، محافظة القاهرة</p>
                 </div>
             </div>
 
-            <div id="bidding-box" style="display:none;">
-                <span class="label-text">السعر المقترح للمزايدة (جنيه)</span>
-                <input type="number" id="driver-bid" placeholder="أدخل سعرك هنا">
+            <div class="shortcut-item" onclick="selectDestination('التجمع الخامس', 'شارع التسعين، القاهرة الجديدة', [30.0249, 31.4746])">
+                <div class="shortcut-icon">🏠</div>
+                <div class="shortcut-info">
+                    <h4>التجمع الخامس</h4>
+                    <p>شارع التسعين، القاهرة الجديدة</p>
+                </div>
             </div>
 
-            <button class="btn-main" onclick="calculateInvoice()">حساب تكلفة الرحلة الحية</button>
-            
-            <div id="invoice" class="invoice-box"></div>
+            <div class="shortcut-item" onclick="selectDestination('مدرسة المعادي الجديدة', 'المعادي، محافظة القاهرة', [29.9802, 31.2845])">
+                <div class="shortcut-icon">🕒</div>
+                <div class="shortcut-info">
+                    <h4>مدرسة المعادي الجديدة</h4>
+                    <p>المعادي، محافظة القاهرة</p>
+                </div>
+            </div>
         </div>
+
+        <button id="confirm-booking" class="confirm-btn" onclick="sendRideToBot()">تأكيد وطلب الكومبو</button>
     </div>
 
     <script>
-        // إعلام تليجرام أن التطبيق جاهز للعمل وفك حظر الخريطة
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand(); // فرد الشاشة كاملة في الموبايل
-        }
+        // تهيئة واجهة التليجرام مسبقاً
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // تمديد الشاشة بالكامل للموبايل
 
-        let map, originMarker, destinationMarker;
-        let stage = 'origin';
-        let isSurge = false;
-        let selectedSeats = 1;
-        let pickupCoords = null, dropoffCoords = null;
+        let map;
+        let pickupCoords = [30.0444, 31.2357]; // إحداثيات القاهرة الافتراضية
+        let destCoords = null;
+        let pickupMarker, destMarker, routeLine;
 
-        // تشغيل الخريطة مع تفعيل إعدادات اللمس لشاشات الموبايل
-        map = L.map('map', {
-            zoomControl: false,
-            dragging: true,
-            touchZoom: true,
-            tap: false
-        }).setView([30.0444, 31.2357], 12);
+        // 1. تشغيل الخريطة والتقاط موقع الراكب الحالي
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView(pickupCoords, 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19
-        }).addTo(map);
-
-        // إجبار المتصفح على رندر الخريطة فوراً وعدم إظهار لون أسود
-        setTimeout(function(){
-            map.invalidateSize(true);
-        }, 300);
-
-        map.on('click', function(e) {
-            if (stage === 'origin') {
-                if (originMarker) map.removeLayer(originMarker);
-                originMarker = L.marker(e.latlng).addTo(map);
-                pickupCoords = e.latlng;
-                stage = 'destination';
-                document.getElementById('instruction').innerText = "🏁 اضغط الآن لتحديد نقطة الوصول";
-            } else {
-                if (destinationMarker) map.removeLayer(destinationMarker);
-                destinationMarker = L.marker(e.latlng).addTo(map);
-                dropoffCoords = e.latlng;
-                stage = 'origin';
-                document.getElementById('instruction').innerText = "📍 تم تحديد النقطتين! يمكنك إعادة الضغط للتغيير";
-            }
-        });
-
-        function toggleSurge() {
-            isSurge = !isSurge;
-            const btn = document.getElementById('surge-toggle');
-            btn.innerText = isSurge ? "🔥 مفعل" : "🚫 مغلق";
-            btn.style.backgroundColor = isSurge ? "#2ecc71" : "#e74c3c";
-        }
-
-        function setSeats(num, el) {
-            selectedSeats = num;
-            document.querySelectorAll('.seat-option').forEach(item => item.classList.remove('active'));
-            el.classList.add('active');
-            updateVehicleOptions();
-        }
-
-        function updateVehicleOptions() {
-            const mode = document.getElementById('ride-mode').value;
-            const vehicleInput = document.getElementById('vehicle-type');
-            const bidding = document.getElementById('bidding-box');
-            const seatsSec = document.getElementById('seats-section');
-
-            if (mode === 'private') {
-                vehicleInput.value = "ملاكي (خاصة بالكامل)";
-                bidding.style.display = "block";
-                seatsSec.style.display = "none";
-            } else {
-                bidding.style.display = "none";
-                seatsSec.style.display = "block";
-                if (selectedSeats <= 3) {
-                    vehicleInput.value = "عربية سوزوكي";
-                } else {
-                    vehicleInput.value = "شاتل جماعي (ميكروباص)";
-                }
+            // محاولة التقاط الـ GPS الفعلي للهاتف مجاناً
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    pickupCoords = [position.coords.latitude, position.coords.longitude];
+                    map.setView(pickupCoords, 15);
+                    
+                    pickupMarker = L.marker(pickupCoords).addTo(map).bindPopup("موقع الاستلام الحالي").openPopup();
+                    document.getElementById('pickup-input').value = "تم تحديد موقعك الحالي بدقة 📍";
+                }, () => {
+                    // في حال رفض الصلاحية نضع الدبوس الافتراضي
+                    pickupMarker = L.marker(pickupCoords).addTo(map);
+                    document.getElementById('pickup-input').value = "القاهرة (موقع افتراضي)";
+                });
             }
         }
 
-        function calculateInvoice() {
-            if (!pickupCoords || !dropoffCoords) {
-                alert("الرجاء تحديد نقطة الركوب والوصول أولاً على الخريطة");
-                return;
-            }
+        // 2. معالجة اختيار وجهة الراكب من القائمة
+        function selectDestination(name, address, coords) {
+            destCoords = coords;
+            document.getElementById('dest-input').value = `${name} (${address})`;
+            
+            // إضافة دبوس الوجهة على الخريطة
+            if (destMarker) map.removeLayer(destMarker);
+            destMarker = L.marker(destCoords).addTo(map).bindPopup(name).openPopup();
 
-            const distance = (pickupCoords.distanceTo(dropoffCoords) / 1000).toFixed(2);
-            const baseFare = 10;
-            const ratePerKm = isSurge ? 15 : 10;
-            let singleTripCost = baseFare + (distance * ratePerKm);
+            // رسم خط مسار مباشر سريع بين النقطتين (مثل معاينة أوبر)
+            if (routeLine) map.removeLayer(routeLine);
+            routeLine = L.polyline([pickupCoords, destCoords], {
+                color: 'black', weight: 4, opacity: 0.8, dashArray: '5, 10'
+            }).addTo(map);
 
-            const invoiceDiv = document.getElementById('invoice');
-            invoiceDiv.style.display = "block";
+            // ضبط الرؤية لتشمل نقطة البداية والنهاية معاً
+            const bounds = L.latLngBounds([pickupCoords, destCoords]);
+            map.fitBounds(bounds, { padding: [50, 50] });
 
-            let invoiceHtml = `<h3>📊 تفاصيل رحلة سكة المالية</h3>`;
-            invoiceHtml += `<p>📏 <b>المسافة التقريبية:</b> ${distance} كم</p>`;
-
-            const mode = document.getElementById('ride-mode').value;
-
-            if (mode === 'combo') {
-                let costPerPassenger = (singleTripCost / selectedSeats).toFixed(2);
-                invoiceHtml += `<p style="color:#f39c12;">💰 <b>حساب المقعد الواحد الكومبو:</b> ${costPerPassenger} جنيه</p>`;
-                invoiceHtml += `<p>👥 <b>حجز مقاعد:</b> ${selectedSeats} مقعد</p>`;
-            } else {
-                let customBid = parseFloat(document.getElementById('driver-bid').value) || singleTripCost;
-                invoiceHtml += `<p style="color:#f39c12;">💎 <b>إجمالي قيمة الرحلة الخاصة:</b> ${customBid.toFixed(2)} جنيه</p>`;
-            }
-
-            invoiceDiv.innerHTML = invoiceHtml;
+            // إخفاء القائمة وإظهار زر التأكيد النهائي للحجز
+            document.getElementById('shortcuts-section').style.display = 'none';
+            document.getElementById('confirm-booking').style.display = 'block';
         }
+
+        // 3. إرسال بيانات رحلة "سكة" بالكامل لـ بوت تليجرام للإدراج والحساب
+        function sendRideToBot() {
+            const payload = {
+                pickup: pickupCoords,
+                destination: destCoords,
+                destinationName: document.getElementById('dest-input').value
+            };
+            
+            // بث البيانات وإغلاق شاشة الـ Web App فوراً
+            tg.sendData(JSON.stringify(payload));
+        }
+
+        // تشغيل الخريطة تلقائياً بمجرد تحميل الصفحة
+        window.onload = initMap;
     </script>
 </body>
 </html>
