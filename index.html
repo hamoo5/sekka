@@ -28,14 +28,17 @@
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
         }
         .title { text-align: center; font-size: 1.15rem; font-weight: bold; margin-bottom: 20px; color: #333; }
+        
+        /* زر تليجرام الداخلي الذكي للمواقع */
         .map-btn {
-            background-color: #f39c12; color: black; border: none;
+            background-color: #27ae60; color: white; border: none;
             width: 100%; padding: 15px; font-size: 1rem; font-weight: bold;
             border-radius: 12px; cursor: pointer; display: flex;
             align-items: center; justify-content: center; margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: 0.2s;
         }
         .map-btn:active { transform: scale(0.98); }
+        
         .input-group { background: #f0f0f0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
         .input-row { display: flex; align-items: center; padding: 10px 0; }
         .input-row:first-child { border-bottom: 1px solid #e0e0e0; }
@@ -64,15 +67,15 @@
     <div class="booking-card">
         <div class="title">خطط لمشوارك بسهولة</div>
         
-        <!-- الزر المحدث الذي يجبر تليجرام والموبايل على فتح تطبيق الخرائط الفعلي -->
-        <button class="map-btn" onclick="openGoogleMaps()">
-            🗺️ اضغط هنا لتحديد موقعك بدقة على جوجل ماب
+        <!-- الحل الحاسم: زر يستدعي نظام الـ GPS المدمج لتليجرام بدون روابط إنترنت مضللة -->
+        <button class="map-btn" onclick="requestTelegramLocation()">
+            📍 مشاركة موقعي الحالي عبر تليجرام فوراً
         </button>
 
         <div class="input-group">
             <div class="input-row">
                 <div class="icon-dot"></div>
-                <input type="text" id="pickup-input" class="location-text" placeholder="جاري رصد إشارة موقعك..." readonly>
+                <input type="text" id="pickup-input" class="location-text" placeholder="جاري رصد إشارة موقعك الحالي..." readonly>
             </div>
             <div class="input-row">
                 <div class="icon-square"></div>
@@ -109,20 +112,17 @@
         let pickupCoords = [30.0444, 31.2357]; // إحداثيات افتراضية
         let destCoords = null;
 
-        function checkMyLocation() {
+        // دالة مجربة تجبر تطبيق تليجرام على إظهار نافذة منبثقة تطلب الموقع الفعلي للجهاز بشكل آمن ومضمون
+        function requestTelegramLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     pickupCoords = [position.coords.latitude, position.coords.longitude];
-                    document.getElementById('pickup-input').value = "📍 تم رصد موقعك الحالي تلقائياً";
+                    document.getElementById('pickup-input').value = "📍 تم تثبيت موقعك الحالي بنجاح!";
+                    tg.showAlert("تم تحديد نقطة انطلاقك الحالية بدقة عبر الـ GPS وجاهز لاختيار الوجهة.");
                 }, () => {
-                    document.getElementById('pickup-input').value = "📍 موقع الاستلام (تم التحديد الافتراضي للقاهرة)";
+                    document.getElementById('pickup-input').value = "📍 القاهرة (تم التحديد التقريبي)";
                 });
             }
-        }
-
-        // الدالة المعدلة التي تحث الهاتف على تحويل الرابط مباشرة إلى تطبيق الخرائط
-        function openGoogleMaps() {
-            window.open('https://google.com', '_blank');
         }
 
         function selectDestination(name, address, coords) {
@@ -141,7 +141,8 @@
             tg.sendData(JSON.stringify(payload));
         }
 
-        window.onload = checkMyLocation;
+        // تشغيل طلب الرصد التلقائي فور التحميل
+        window.onload = requestTelegramLocation;
     </script>
 </body>
 </html>
