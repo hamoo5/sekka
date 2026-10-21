@@ -4,28 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منظومة كومبو للرحلات | خطط لمشوارك</title>
-    <!-- ملفات خريطة Leaflet المجانية -->
-    <link rel="stylesheet" href="https://unpkg.com" />
-    <script src="https://unpkg.com"></script>
-    <!-- مكتبة Telegram Web App لتوصيل البيانات بالبوت -->
+    
+    <!-- روابط مكتبة Leaflet المفتوحة والآمنة بالكامل -->
+    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- مكتبة تليجرام ويب آب -->
     <script src="https://telegram.org"></script>
     
     <style>
         body, html {
             margin: 0; padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f7f7f7; height: 100%; overflow: hidden;
+            background-color: #f7f7f7; height: 100%; width: 100%;
         }
+        /* تعديل ستايل حاوية الخريطة لضمان الظهور الفوري */
         #map {
-            height: 45vh; width: 100%;
+            height: 45vh; 
+            width: 100%;
+            display: block;
             background-color: #e5e3df;
         }
         .booking-card {
-            height: 55vh; background: white;
-            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            height: 55vh; 
+            background: white;
+            border-top-left-radius: 20px; 
+            border-top-right-radius: 20px;
             box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
-            padding: 20px; box-sizing: border-box;
-            position: relative; z-index: 1000;
+            padding: 20px; 
+            box-sizing: border-box;
+            overflow-y: auto; /* للسماح بالتمرير داخل الموبايل */
         }
         .title {
             text-align: center; font-size: 1.2rem;
@@ -81,10 +89,10 @@
 </head>
 <body>
 
-    <!-- قسم الخريطة التفاعلية الفوقي -->
+    <!-- حاوية الخريطة -->
     <div id="map"></div>
 
-    <!-- بطاقة الحجز السفلية الشبيهة بأوبر -->
+    <!-- بطاقة الحجز -->
     <div class="booking-card">
         <div class="title">خطط لمشوارك الكومبو</div>
         
@@ -131,26 +139,31 @@
     </div>
 
     <script>
-        // تهيئة واجهة التليجرام مسبقاً
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand(); // تمديد الشاشة بالكامل للموبايل
+        tg.expand();
 
         let map;
-        let pickupCoords = [30.0444, 31.2357]; // إحداثيات القاهرة الافتراضية
+        let pickupCoords = [30.0444, 31.2357]; // موقع افتراضي (القاهرة)
         let destCoords = null;
         let pickupMarker, destMarker, routeLine;
 
-        // 1. تشغيل الخريطة والتقاط موقع الراكب الحالي
         function initMap() {
+            // تهيئة الخريطة بداخل الحاوية المصححة
             map = L.map('map', { zoomControl: false }).setView(pickupCoords, 13);
             
+            // استدعاء السيرفر المفتوح لصور الشوارع
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '© OpenStreetMap'
             }).addTo(map);
 
-            // محاولة التقاط الـ GPS الفعلي للهاتف مجاناً
+            // إجبار الخريطة على إعادة احتساب أبعادها لتلافي المشهد الرمادي بالموبايل
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 200);
+
+            // قراءة الـ GPS للمستخدم تلقائياً
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     pickupCoords = [position.coords.latitude, position.coords.longitude];
@@ -159,50 +172,40 @@
                     pickupMarker = L.marker(pickupCoords).addTo(map).bindPopup("موقع الاستلام الحالي").openPopup();
                     document.getElementById('pickup-input').value = "تم تحديد موقعك الحالي بدقة 📍";
                 }, () => {
-                    // في حال رفض الصلاحية نضع الدبوس الافتراضي
                     pickupMarker = L.marker(pickupCoords).addTo(map);
-                    document.getElementById('pickup-input').value = "القاهرة (موقع افتراضي)";
+                    document.getElementById('pickup-input').value = "تم تحديد موقعك (افتراضي)";
                 });
             }
         }
 
-        // 2. معالجة اختيار وجهة الراكب من القائمة
         function selectDestination(name, address, coords) {
             destCoords = coords;
             document.getElementById('dest-input').value = `${name} (${address})`;
             
-            // إضافة دبوس الوجهة على الخريطة
             if (destMarker) map.removeLayer(destMarker);
             destMarker = L.marker(destCoords).addTo(map).bindPopup(name).openPopup();
 
-            // رسم خط مسار مباشر سريع بين النقطتين (مثل معاينة أوبر)
             if (routeLine) map.removeLayer(routeLine);
             routeLine = L.polyline([pickupCoords, destCoords], {
                 color: 'black', weight: 4, opacity: 0.8, dashArray: '5, 10'
             }).addTo(map);
 
-            // ضبط الرؤية لتشمل نقطة البداية والنهاية معاً
             const bounds = L.latLngBounds([pickupCoords, destCoords]);
-            map.fitBounds(bounds, { padding: [50, 50] });
+            map.fitBounds(bounds, { padding: [30, 30] });
 
-            // إخفاء القائمة وإظهار زر التأكيد النهائي للحجز
             document.getElementById('shortcuts-section').style.display = 'none';
             document.getElementById('confirm-booking').style.display = 'block';
         }
 
-        // 3. إرسال بيانات رحلة "سكة" بالكامل لـ بوت تليجرام للإدراج والحساب
         function sendRideToBot() {
             const payload = {
                 pickup: pickupCoords,
                 destination: destCoords,
                 destinationName: document.getElementById('dest-input').value
             };
-            
-            // بث البيانات وإغلاق شاشة الـ Web App فوراً
             tg.sendData(JSON.stringify(payload));
         }
 
-        // تشغيل الخريطة تلقائياً بمجرد تحميل الصفحة
         window.onload = initMap;
     </script>
 </body>
